@@ -288,7 +288,7 @@ disable-fzf-tab() {
   unfunction compadd 2>/dev/null
 
   functions[_main_complete]=$functions[_ftb__main_complete]
-  functions[_approximate]=$functions[_ftb__approximate]
+  functions[_approximate]=${functions[_ftb__approximate]//-ftb-compadd/builtin compadd}
 
   # Don't remove .fzf-tab-orig-$_ftb_orig_widget as we won't be able to reliably
   # create it if enable-fzf-tab is called again.
@@ -346,7 +346,8 @@ enable-fzf-tab() {
   # _approximate will also hook compadd
   # let it call -ftb-compadd instead of builtin compadd so that fzf-tab can capture result
   # make sure _approximate has been loaded.
-  functions[_ftb__approximate]=$functions[_approximate]
+  autoload +XUz _approximate
+  functions[_ftb__approximate]=${functions[_approximate]//builtin compadd/-ftb-compadd}
   function _approximate() {
     # if not called by fzf-tab, don't do anything with compadd
     (( ! IN_FZF_TAB )) || unfunction compadd
