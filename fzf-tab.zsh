@@ -55,6 +55,14 @@ builtin unalias -m '[^+]*'
   local key expanded __tmp_value=$'<\0>' # placeholder
   for key in $keys; do
     expanded=${(P)key}
+    # XXX: drop (#a<N>) sequence prepended onto $PREFIX by _approximate
+    #      I do not know what it is supposed to mean; <N> seems to indicate
+    #      the correction count.
+    #      there also may be a "~" prepended if the original $PREFIX
+    #      started with a "~" (see _approximate() source); account for that
+    if [[ $key == PREFIX ]]; then
+      expanded=${expanded/(#s)(#b)(|~)'(#a'[0-9]##')'/$match[1]}
+    fi
     if [[ -n $expanded ]]; then
       __tmp_value+=$'\0'$key$'\0'$expanded
     fi
