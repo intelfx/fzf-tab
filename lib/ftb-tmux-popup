@@ -13,12 +13,28 @@ if (( ! $+functions[zsh_math_func_min] )); then
   zmathfunc
 fi
 
-: ${tmp_dir:=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER}
-
 # fallback to fzf if it is not running in tmux
 if (( ! $+TMUX_PANE )); then
   fzf $@
   return
+fi
+
+if (( ! $+tmp_dir )); then
+  local tmp_dir=${TMPPREFIX:-/tmp/zsh}-fzf-tab-$USER
+
+  # we might be running under sudo, in which case our UID will be different from
+  # the UID in the process launched by `tmux popup`.
+  # we substitute $tmp_dir explicitly, but the process under `tmux popup` will
+  # not have permission to write the result.
+  local tmux_user=$(command tmux display-message -p "#{user}")
+  if [[ $USER == $tmux_user ]]; then
+    command mkdir -p $tmp_dir
+  else
+    # disambiguate tmpdirs for same $USER on behalf of different tmux users
+    tmp_dir+="-$tmux_user"
+    command mkdir -p $tmp_dir
+    command setfacl --modify={,d:}u:${tmux_user}:rwX $tmp_dir
+  fi
 fi
 
 local ret=0
@@ -37,7 +53,6 @@ fi
 
 # if not called by fzf-tab
 if (( ! $+IN_FZF_TAB )); then
-  [[ -d $tmp_dir ]] || mkdir -p $tmp_dir
   cat > $tmp_dir/completions.$$
 fi
 
